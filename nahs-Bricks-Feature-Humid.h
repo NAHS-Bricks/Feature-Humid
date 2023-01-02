@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <nahs-Bricks-Lib-HDC1080.h>
+#include <nahs-Bricks-Lib-SHT4x.h>
 #include <nahs-Bricks-Feature-BaseClass.h>
 #include <nahs-Bricks-Lib-RTCmem.h>
 #include <nahs-Bricks-Lib-FSmem.h>
@@ -12,12 +13,18 @@ class NahsBricksFeatureHumid : public NahsBricksFeatureBaseClass {
     private:  // Variables
         static const uint8_t version = 1;
         bool _HDC1080_connected = false;
+        bool _SHT4x_connected = false;
         typedef struct {
             bool sensorCorrRequested;
             HDC1080_SerialNumber HDC1080SN;  // holds SN of HDC1080 Sensor if connected
             float HDC1080Corr;  // holds correction value for HDC1080 if connected
         } _RTCdata;
+        typedef struct {
+            SHT4x_SerialNumber SHT4xSN;  // holds SN of SHT4x Sensor if connected
+            float SHT4xCorr;  // holds correction value for SHT4x if connected
+        } _SHTdata;
         _RTCdata* RTCdata = RTCmem.registerData<_RTCdata>();
+        _SHTdata* SHTdata = RTCmem.registerData<_SHTdata>();
         JsonObject FSdata = FSmem.registerData("h");
 
     public: // BaseClass implementations

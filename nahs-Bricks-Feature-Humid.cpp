@@ -23,13 +23,15 @@ Configures FSmem und RTCmem variables (prepares feature to be fully operational)
 */
 void NahsBricksFeatureHumid::begin() {
     _HDC1080_connected = HDC1080.begin();
+    _SHT4x_connected = SHT4x.begin();
 
     if (!FSdata.containsKey("sCorr")) FSdata.createNestedObject("sCorr");  // dict with sensorSN as key and sensorCorr as value
 
     if (!RTCmem.isValid()) {
-        if (!_HDC1080_connected) {
+        if (!_HDC1080_connected || !_SHT4x_connected) {
             delay(15);
             _HDC1080_connected = HDC1080.isConnected();
+            _SHT4x_connected = SHT4x.isConnected();
         }
         RTCdata->sensorCorrRequested = false;
 
@@ -45,6 +47,19 @@ void NahsBricksFeatureHumid::begin() {
             memset(RTCdata->HDC1080SN, 0, sizeof(RTCdata->HDC1080SN));
             RTCdata->HDC1080Corr = 0;
         }
+
+        if (_SHT4x_connected) {
+            SHT4x.getSN(SHTdata->SHT4xSN);
+            String sn = SHT4x.snToString(SHTdata->SHT4xSN);
+            if (FSdata["sCorr"].as<JsonObject>().containsKey(sn)) {
+                SHTdata->SHT4xCorr = FSdata["sCorr"].as<JsonObject>()[sn].as<float>();
+            }
+            else SHTdata->SHT4xCorr = 0;
+        }
+        else {
+            memset(SHTdata->SHT4xSN, 0, sizeof(SHTdata->SHT4xSN));
+            SHTdata->SHT4xCorr = 0;
+        }
     }
 }
 
@@ -55,6 +70,11 @@ void NahsBricksFeatureHumid::start() {
     // Trigger Conversion of HDC1080 in Background if connected
     if (_HDC1080_connected) {
         HDC1080.triggerRead();
+    }
+
+    // Trigger Conversion of SHT4x in Background if connected
+    if (_SHT4x_connected) {
+        SHT4x.triggerRead();
     }
 }
 
@@ -71,6 +91,11 @@ void NahsBricksFeatureHumid::deliver(JsonDocument* out_json) {
             s_array.add(HDC1080.snToString(RTCdata->HDC1080SN));
             s_array.add(RTCdata->HDC1080Corr);
         }
+        if (_SHT4x_connected) {
+            JsonArray s_array = c_array.createNestedArray();
+            s_array.add(SHT4x.snToString(SHTdata->SHT4xSN));
+            s_array.add(SHTdata->SHT4xCorr);
+        }
     }
 
     // deliver the humidity readings
@@ -79,6 +104,11 @@ void NahsBricksFeatureHumid::deliver(JsonDocument* out_json) {
         JsonArray s_array = t_array.createNestedArray();
         s_array.add(HDC1080.snToString(RTCdata->HDC1080SN));
         s_array.add(HDC1080.getH() + RTCdata->HDC1080Corr);
+    }
+    if (_SHT4x_connected) {
+        JsonArray s_array = t_array.createNestedArray();
+        s_array.add(SHT4x.snToString(SHTdata->SHT4xSN));
+        s_array.add(SHT4x.getH() + SHTdata->SHT4xCorr);
     }
 }
 
@@ -116,6 +146,13 @@ void NahsBricksFeatureHumid::printRTCdata() {
         Serial.print(HDC1080.snToString(RTCdata->HDC1080SN));
         Serial.print(" (");
         Serial.print(RTCdata->HDC1080Corr);
+        Serial.println(")");
+    }
+    if (_SHT4x_connected) {
+        Serial.print("    ");
+        Serial.print(SHT4x.snToString(SHTdata->SHT4xSN));
+        Serial.print(" (");
+        Serial.print(SHTdata->SHT4xCorr);
         Serial.println(")");
     }
 }
@@ -190,6 +227,13 @@ void NahsBricksFeatureHumid::_readSensorsRaw() {
         Serial.print(": ");
         Serial.println(HDC1080.getH());
     }
+    if (_SHT4x_connected) {
+        SHT4x.getH();  // dummy read to be able to trigger an new conversion
+        SHT4x.triggerRead();
+        Serial.print(SHT4x.snToString(SHTdata->SHT4xSN));
+        Serial.print(": ");
+        Serial.println(SHT4x.getH());
+    }
 }
 
 /*
@@ -204,6 +248,13 @@ void NahsBricksFeatureHumid::_readSensorsCorr() {
         Serial.print(": ");
         Serial.println(HDC1080.getH() + RTCdata->HDC1080Corr);
     }
+    if (_SHT4x_connected) {
+        SHT4x.getH();  // dummy read to be able to trigger an new conversion
+        SHT4x.triggerRead();
+        Serial.print(SHT4x.snToString(SHTdata->SHT4xSN));
+        Serial.print(": ");
+        Serial.println(SHT4x.getH() + SHTdata->SHT4xCorr);
+    }
 }
 
 /*
@@ -217,6 +268,8 @@ void NahsBricksFeatureHumid::_setDefaultCorr() {
 
     if (HDC1080.snToString(RTCdata->HDC1080SN) == addr) {
         RTCdata->HDC1080Corr = corr;
+    } else if (SHT4x.snToString(SHTdata->SHT4xSN) == addr) {
+        SHTdata->SHT4xCorr = corr;
     }
     FSdata["sCorr"].as<JsonObject>()[addr] = corr;
     Serial.print("Set correction value of ");
@@ -234,6 +287,8 @@ void NahsBricksFeatureHumid::_deleteDefaultCorr() {
 
     if (HDC1080.snToString(RTCdata->HDC1080SN) == addr) {
         RTCdata->HDC1080Corr = 0;
+    } else if (SHT4x.snToString(SHTdata->SHT4xSN) == addr) {
+        SHTdata->SHT4xCorr = 0;
     }
 
     if (FSdata["sCorr"].as<JsonObject>().containsKey(addr)) FSdata["sCorr"].as<JsonObject>().remove(addr);

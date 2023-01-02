@@ -1,12 +1,12 @@
 {
   "name": "nahs-Bricks-Feature-Humid",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Implements the feature Humid for NAHS-Bricks which cares about reading connected humidity sensors.",
   "keywords": "NAHS-Bricks, feature, humidity",
   "repository":
   {
     "type": "git",
-    "url": "git@github.com:NAHS-Bricks/Feature-Humid.git"
+    "url": "https://github.com/NAHS-Bricks/Feature-Humid.git"
   },
   "authors":
   [
@@ -28,6 +28,7 @@
       "nils-ost/nahs-Bricks-Lib-RTCmem": ">=1.1.1",
       "nils-ost/nahs-Bricks-Lib-SerHelp": ">=0.2.0",
       "nils-ost/nahs-Bricks-Lib-HDC1080": ">=1.0.0",
+      "nils-ost/nahs-Bricks-Lib-SHT4x": ">=1.0.0",
       "nils-ost/nahs-Bricks-Feature-All": ">=1.3.0"
   },
   "frameworks": "*",
