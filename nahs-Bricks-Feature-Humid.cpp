@@ -118,7 +118,7 @@ Processes feedback coming from BrickServer
 void NahsBricksFeatureHumid::feedback(JsonDocument* in_json) {
     // evaluate requests
     if (in_json->containsKey("r")) {
-        for (JsonVariant value : in_json->getMember("r").as<JsonArray>()) {
+        for (JsonVariant value : in_json->operator[]("r").as<JsonArray>()) {
             switch(value.as<uint8_t>()) {
                 case 9:
                     RTCdata->sensorCorrRequested = true;
